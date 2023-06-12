@@ -11,7 +11,7 @@ class App(ttk.Window):
         # title
         frame = ttk.Frame(self ,bootstyle="dark" )
         frame.pack(fill="both" , anchor="e")
-        ttk.Label(frame , text="إشعار الضمان" , font="arial 32 bold" ,  bootstyle="inverse" ,).pack()
+        ttk.Label(frame , text="إشعار ضمان" , font="arial 32 bold" ,  bootstyle="inverse" ,).pack()
         ttk.Separator(self,bootstyle="dark").pack(fill="both" , pady=4)
         # Basic information
         entries = (
@@ -20,7 +20,7 @@ class App(ttk.Window):
             ("Location:"            , "location"            , "entry"   ,2,0 , None),
             ("Inspection Center:"   , "inspection_center"   , "entry"   ,3,0 , None),
             ("Technical Inspector:" , "technical_inspector" , "entry"   ,1,1 , None),
-            ("Inspection Date:"     , "Inspection_date"     , "entry"   ,2,1 , None),
+            ("Inspection Date:"     , "Inspection_date"     , "date"    ,2,1 , None),
             ("Received On:"         , "received_on"         , "entry"   ,3,1 , None),
         )
         self.basic_info = EntriesFrame(self,"Basic Info (المعلومات الاساسية)",entries)
@@ -38,7 +38,7 @@ class App(ttk.Window):
         entries = (
             ("Tire:"                , "tire"            , "entry"   ,0,0 , None),
             ("Tire category:"       , "tire_category"   , "entry"   ,1,0 , None),
-            ("Load Index [70-170]:" , "load_index"      , "entry" ,2,0 , (70,170)),
+            ("Load Index [70-170]:" , "load_index"      , "spinbox" ,2,0 , (70,170)),
             ("Origin:"              , "origin"          , "entry"   ,3,0 , None),
             ("Tire Position:"       , "tire_position"   , "menu"    ,1,1 , ("FL","FR","BL","BR")),
             ("Speed Rating:"        , "speed_rating"    , "entry"   ,2,1 , None),
@@ -81,6 +81,12 @@ class EntriesFrame(ttk.Labelframe):
             option_menu = ttk.OptionMenu(frame ,self.entry_dict[entry_name] ,options[0], *options , bootstyle="outline")
             option_menu.pack(side="left", fill="both" , expand=True)
             option_menu.config(width=19)
+        elif entry_type == "spinbox":
+            self.entry_dict[entry_name] = ttk.Spinbox(frame , from_=options[0] , to=options[1])
+            self.entry_dict[entry_name].pack(side="left", fill="both" , expand=True)
+        elif entry_type == "date":
+            self.entry_dict[entry_name] = ttk.DateEntry(master=frame)
+            self.entry_dict[entry_name].pack(side="left", fill="both" , expand=True)
             
     def get_data(self):
         data = {}
