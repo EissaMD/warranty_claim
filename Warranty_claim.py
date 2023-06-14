@@ -8,7 +8,7 @@ class App(ttk.Window):
             title="إشعار ضمان",
             themename="flatly",
             size=(700, 780),
-            # resizable=(False, False),
+            resizable=(True, False),
         )
         # title
         frame = ttk.Frame(self ,bootstyle="dark" )
@@ -66,13 +66,15 @@ class App(ttk.Window):
         frame = ttk.Frame(frame); frame.pack(side="left",fill="y")
         ttk.Button(frame,text="+" ,bootstyle="outline" , command=self.add_img).pack(fill="both",expand=True)
         ttk.Button(frame,text="-" ,bootstyle="outline" , command=self.img_table.delete_selection).pack(fill="both",expand=True)
+        ttk.Button(self,text="اصدار" ,bootstyle="outline" ,command=self.create_warranty_document).pack()
     ###############        ###############        ###############        ###############        
     def add_img(self,):
         files = filedialog.askopenfilenames(filetypes=[('image files', ('.png', '.jpg' , '.jpeg' ))])
         rows = []
+        data = tuple(self.img_table.data.values())
         for file in files:
             row = (os.path.basename(file), file)
-            if row not in self.img_table.data:
+            if row not in data:
                 rows.append(row)
         self.img_table.add_rows(rows)
 ##############################################################################################################
@@ -105,8 +107,9 @@ class EntriesFrame(ttk.Labelframe):
             self.entry_dict[entry_name] = ttk.Spinbox(frame , from_=options[0] , to=options[1])
             self.entry_dict[entry_name].pack(side="left", fill="both" , expand=True)
         elif entry_type == "date":
-            self.entry_dict[entry_name] = ttk.DateEntry(master=frame)
+            self.entry_dict[entry_name] = ttk.DateEntry(master=frame , dateformat="%d-%m-%Y")
             self.entry_dict[entry_name].pack(side="left", fill="both" , expand=True)
+            self.entry_dict[entry_name] = self.entry_dict[entry_name].entry
     ###############        ###############        ###############        ###############
     def get_data(self):
         data = {}
@@ -118,7 +121,7 @@ class EntriesFrame(ttk.Labelframe):
 
 class InfoTable(ttk.Treeview):
     def __init__(self,master,headers=()):
-        self.data = [] # initialize empty tree
+        self.data = {} # initialize empty tree
         super().__init__(master, columns=headers, show="headings" , bootstyle="primary" , height=3,)
         for header in headers:
             label = header.replace("_", " ")
@@ -131,21 +134,20 @@ class InfoTable(ttk.Treeview):
     ###############        ###############        ###############        ###############
     def add_rows(self,rows=None):
         if rows is not None:
-            self.data.extend(rows)
             for row in rows:
                 self.insert('', ttk.END, values=row)
+                self.data[self.get_children()[-1]] = row
     ###############        ###############        ###############        ###############
     def add_new_rows(self,rows=None):
         if rows is not None:
-            self.data = rows
+            self.data = {}
             self.clear()
             self.add_rows(rows)
     ###############        ###############        ###############        ###############
     def delete_selection(self):
         for sel_item in self.selection():
             self.delete(sel_item)
-            sel_item = int(re.sub("[^0-9]", "", sel_item))
-            self.data.pop(sel_item-1)
+            self.data.pop(sel_item)
 ##############################################################################################################
 
 class NewRow(ttk.Frame):
