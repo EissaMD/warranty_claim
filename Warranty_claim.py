@@ -1,6 +1,12 @@
 import ttkbootstrap as ttk
 from tkinter import filedialog
-import os , re
+import os , re , csv
+import python_docx_replace
+import docx
+import docx2pdf
+from docx.shared import Inches
+from datetime import datetime
+from PIL import Image
 
 class App(ttk.Window):
     def __init__(self):
@@ -66,7 +72,7 @@ class App(ttk.Window):
         frame = ttk.Frame(frame); frame.pack(side="left",fill="y")
         ttk.Button(frame,text="+" ,bootstyle="outline" , command=self.add_img).pack(fill="both",expand=True)
         ttk.Button(frame,text="-" ,bootstyle="outline" , command=self.img_table.delete_selection).pack(fill="both",expand=True)
-        ttk.Button(self,text="اصدار" ,bootstyle="outline" ,command=self.create_warranty_document).pack()
+        ttk.Button(self,text="اصدار تقرير" ,bootstyle="outline" ,command=self.create_warranty_document).pack()
     ###############        ###############        ###############        ###############        
     def add_img(self,):
         files = filedialog.askopenfilenames(filetypes=[('image files', ('.png', '.jpg' , '.jpeg' ))])
@@ -77,6 +83,39 @@ class App(ttk.Window):
             if row not in data:
                 rows.append(row)
         self.img_table.add_rows(rows)
+    ###############        ###############        ###############        ###############    
+    def create_warranty_document(self):
+        data = {"id":"0001","year":datetime.now().year,"month":datetime.now().month,"day":datetime.now().day}
+        #get all entries
+        data.update(self.basic_info.get_data())
+        data.update(self.customer_info.get_data())
+        data.update(self.tire_info.get_data())
+        data.update(self.damage_info.get_data())
+        doc = docx.Document("claims_report_py.docx")
+        python_docx_replace.docx_replace(doc,**data)
+        # img locations on last two tables (forth & fifth tables)
+        loc = ((4,0,0),(4,0,1),(5,0,0),(5,0,1),(5,1,0),(5,1,1),)
+        # get images
+        img_files = tuple(self.img_table.data.values())
+        img_files = img_files[:6]
+        loc = loc[:len(img_files)]
+        tables = doc.tables
+        for file , pos in zip(img_files,loc):
+            t_pos , row_pos , cell_pos = pos
+            _ , path = file
+            p = tables[t_pos].rows[row_pos].cells[cell_pos].add_paragraph()
+            r = p.add_run()
+            r.add_picture(path , width=Inches(3), height=Inches(3))
+        # create a new document
+        temp_file = "temp.docx"
+        doc.save(temp_file)
+        # convert to pdf
+        docx2pdf.convert(temp_file,"abc.pdf")
+        os.remove(temp_file) 
+        with open('mycsvfile.csv', 'w') as f:  # You will need 'wb' mode in Python 2.x
+            w = csv.DictWriter(f, data.keys())
+            w.writeheader()
+            w.writerow(data)
 ##############################################################################################################
         
 class EntriesFrame(ttk.Labelframe):
