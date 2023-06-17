@@ -1,6 +1,6 @@
 import ttkbootstrap as ttk
 from tkinter import filedialog
-import os , re , csv
+import os , re , csv , math
 import python_docx_replace
 import docx
 import docx2pdf
@@ -91,28 +91,19 @@ class App(ttk.Window):
         data.update(self.customer_info.get_data())
         data.update(self.tire_info.get_data())
         data.update(self.damage_info.get_data())
-        doc = docx.Document("claims_report_py.docx")
+        doc = docx.Document("claims_report_py11.docx")
         python_docx_replace.docx_replace(doc,**data)
-        # img locations on last two tables (forth & fifth tables)
-        loc = ((4,0,0),(4,0,1),(5,0,0),(5,0,1),(5,1,0),(5,1,1),)
         # get images
         img_files = tuple(self.img_table.data.values())
         img_files = img_files[:6]
-        loc = loc[:len(img_files)]
-        tables = doc.tables
-        for file , pos in zip(img_files,loc):
-            t_pos , row_pos , cell_pos = pos
-            _ , path = file
-            p = tables[t_pos].rows[row_pos].cells[cell_pos].add_paragraph()
-            r = p.add_run()
-            r.add_picture(path , width=Inches(3), height=Inches(3))
+        TableWithImages(doc,img_files)
         # create a new document
         temp_file = "temp.docx"
         doc.save(temp_file)
         # convert to pdf
         docx2pdf.convert(temp_file,"abc.pdf")
         os.remove(temp_file) 
-        with open('mycsvfile.csv', 'w') as f:  # You will need 'wb' mode in Python 2.x
+        with open('mycsvfile.csv', 'w') as f: 
             w = csv.DictWriter(f, data.keys())
             w.writeheader()
             w.writerow(data)
@@ -146,15 +137,14 @@ class EntriesFrame(ttk.Labelframe):
             self.entry_dict[entry_name] = ttk.Spinbox(frame , from_=options[0] , to=options[1])
             self.entry_dict[entry_name].pack(side="left", fill="both" , expand=True)
         elif entry_type == "date":
-            self.entry_dict[entry_name] = ttk.DateEntry(master=frame , dateformat="%d-%m-%Y")
-            self.entry_dict[entry_name].pack(side="left", fill="both" , expand=True)
-            self.entry_dict[entry_name] = self.entry_dict[entry_name].entry
+            DateEntry = ttk.DateEntry(master=frame , dateformat="%d-%m-%Y")
+            DateEntry.pack(side="left", fill="both" , expand=True)
+            self.entry_dict[entry_name] = DateEntry.entry
     ###############        ###############        ###############        ###############
     def get_data(self):
         data = {}
         for entry_name in self.entry_dict:
             data[entry_name] = self.entry_dict[entry_name].get()
-        print(data)
         return data
 ##############################################################################################################
 
@@ -195,6 +185,36 @@ class NewRow(ttk.Frame):
         self.pack(fill="both",padx=padx,pady=pady)
         for column_no,column_wight in enumerate(column_percentage):
             self.columnconfigure(column_no,weight=column_wight)
+##############################################################################################################
+
+class TableWithImages():
+    def __init__(self,doc,imgs_path):
+        for img_no , img in enumerate(imgs_path):
+            _ , file = img
+            cell = (img_no)%2
+            if cell == 0:
+                table = doc.add_table(rows=1, cols=2 , style='Table Grid')
+            p = table.rows[0].cells[cell].add_paragraph()
+            r = p.add_run()
+            w_inch , h_inch = self.resize_img_inch(file,250,250)
+            r.add_picture(file , width=Inches(w_inch), height=Inches(h_inch))
+    ###############        ###############        ###############        ###############
+    def resize_img(self,file_path,max_w,max_h):
+        img = Image.open(file_path)
+        w,h =img.size
+        if w>h:
+            h= h *max_w/w
+            w=max_w
+        else : 
+            w = w*max_h/h
+            h = max_h
+        return w,h
+    ###############        ###############        ###############        ###############
+    def resize_img_inch(self,file_path,max_w,max_h):
+        w,h = self.resize_img(file_path,max_w,max_h)
+        return w/96 , h/96 
+##############################################################################################################
+
 if __name__ == '__main__':
     app = App()
     app.mainloop()
