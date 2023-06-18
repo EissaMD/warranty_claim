@@ -72,7 +72,7 @@ class App(ttk.Window):
         frame = ttk.Frame(frame); frame.pack(side="left",fill="y")
         ttk.Button(frame,text="+" ,bootstyle="outline" , command=self.add_img).pack(fill="both",expand=True)
         ttk.Button(frame,text="-" ,bootstyle="outline" , command=self.img_table.delete_selection).pack(fill="both",expand=True)
-        ttk.Button(self,text="اصدار تقرير" ,bootstyle="outline" ,command=self.create_warranty_document).pack()
+        ttk.Button(self,text="PDF اصدار" ,bootstyle="outline" ,command=self.create_warranty_document).pack()
     ###############        ###############        ###############        ###############        
     def add_img(self,):
         files = filedialog.askopenfilenames(filetypes=[('image files', ('.png', '.jpg' , '.jpeg' ))])
@@ -85,7 +85,14 @@ class App(ttk.Window):
         self.img_table.add_rows(rows)
     ###############        ###############        ###############        ###############    
     def create_warranty_document(self):
-        data = {"id":"0001","year":datetime.now().year,"month":datetime.now().month,"day":datetime.now().day}
+        data = {}
+        with open("data.csv", "r",errors="ignore") as file:
+            for row in csv.DictReader(file):
+                final_line = row
+        row_no = str(int(final_line["id"])+1)
+        row_no = row_no.zfill(4)
+        additional_info = {"id":row_no,"year":datetime.now().year,"month":datetime.now().month,"day":datetime.now().day}
+        data.update(additional_info)
         #get all entries
         data.update(self.basic_info.get_data())
         data.update(self.customer_info.get_data())
@@ -97,15 +104,24 @@ class App(ttk.Window):
         img_files = tuple(self.img_table.data.values())
         img_files = img_files[:6]
         TableWithImages(doc,img_files)
+        p = doc.add_paragraph()
+        r = p.add_run()
+        r.add_picture('stamp.png')
         # create a new document
         temp_file = "temp.docx"
         doc.save(temp_file)
         # convert to pdf
         docx2pdf.convert(temp_file,"abc.pdf")
-        os.remove(temp_file) 
-        with open('mycsvfile.csv', 'w') as f: 
+        # Remove word document
+        os.remove(temp_file)
+        # 
+        for key in additional_info.keys():
+            if key != "id":
+                data.pop(key)
+        data["timestamp"] = str(datetime.now())
+        with open('data.csv', 'a' , newline="") as f: 
             w = csv.DictWriter(f, data.keys())
-            w.writeheader()
+            # w.writeheader()
             w.writerow(data)
 ##############################################################################################################
         
