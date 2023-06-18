@@ -72,7 +72,7 @@ class App(ttk.Window):
         frame = ttk.Frame(frame); frame.pack(side="left",fill="y")
         ttk.Button(frame,text="+" ,bootstyle="outline" , command=self.add_img).pack(fill="both",expand=True)
         ttk.Button(frame,text="-" ,bootstyle="outline" , command=self.img_table.delete_selection).pack(fill="both",expand=True)
-        ttk.Button(self,text="PDF اصدار" ,bootstyle="outline" ,command=self.create_warranty_document).pack()
+        ttk.Button(self,text="PDF اصدار" ,bootstyle="outline" ,command=self.create_pdf_document).pack()
     ###############        ###############        ###############        ###############        
     def add_img(self,):
         files = filedialog.askopenfilenames(filetypes=[('image files', ('.png', '.jpg' , '.jpeg' ))])
@@ -84,7 +84,13 @@ class App(ttk.Window):
                 rows.append(row)
         self.img_table.add_rows(rows)
     ###############        ###############        ###############        ###############    
-    def create_warranty_document(self):
+    def create_pdf_document(self):
+        output_file = filedialog.asksaveasfile(filetypes=[('PDF','.pdf')])
+        output_file = output_file.name
+        if output_file == "":
+            return
+        if not output_file.lower().endswith('.pdf'):
+            output_file += ".pdf"
         data = {}
         with open("data.csv", "r",errors="ignore") as file:
             for row in csv.DictReader(file):
@@ -111,7 +117,7 @@ class App(ttk.Window):
         temp_file = "temp.docx"
         doc.save(temp_file)
         # convert to pdf
-        docx2pdf.convert(temp_file,"abc.pdf")
+        docx2pdf.convert(temp_file,output_file)
         # Remove word document
         os.remove(temp_file)
         # 
