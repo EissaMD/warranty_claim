@@ -1,9 +1,8 @@
 import ttkbootstrap as ttk
 from tkinter import filedialog
-import os , re , csv , math
+import os , csv
 import python_docx_replace
 import docx
-import docx2pdf
 from docx.shared import Inches
 from datetime import datetime
 from PIL import Image
@@ -19,48 +18,45 @@ class App(ttk.Window):
         # title
         frame = ttk.Frame(self ,bootstyle="dark" )
         frame.pack(fill="both" , anchor="e")
-        ttk.Label(frame , text="إشعار ضمان" , font="arial 32 bold" ,  bootstyle="inverse" ,).pack()
+        ttk.Label(frame , text="تقرير ضمان" , font="arial 32 bold" ,  bootstyle="inverse" ,).pack()
         ttk.Separator(self,bootstyle="dark").pack(fill="both" , pady=4)
         # Basic information
         entries = (
-            ("Warranty Claim:"      , "warranty_claim"      , "menu"    ,0,0 , ("Accepted - مقبول", "Rejected - مرفوض")),
-            ("Distributer:"         , "distribute"          , "entry"   ,1,0 , None),
-            ("Location:"            , "location"            , "entry"   ,2,0 , None),
-            ("Inspection Center:"   , "inspection_center"   , "entry"   ,3,0 , None),
-            ("Technical Inspector:" , "technical_inspector" , "entry"   ,1,1 , None),
-            ("Inspection Date:"     , "Inspection_date"     , "date"    ,2,1 , None),
-            ("Received On:"         , "received_on"         , "entry"   ,3,1 , None),
+            ("warranty_claim"      , "menu"    ,0,0 , ("Accepted - مقبول", "Rejected - مرفوض")),
+            ("distribute"          , "entry"   ,1,0 , None),
+            ("location"            , "entry"   ,2,0 , None),
+            ("inspection_center"   , "entry"   ,3,0 , None),
+            ("technical_inspector" , "entry"   ,1,1 , None),
+            ("Inspection_date"     , "date"    ,2,1 , None),
+            ("received_on"         , "entry"   ,3,1 , None),
         )
         self.basic_info = EntriesFrame(self,"Basic Info (المعلومات الاساسية)",entries)
         # Customer and Vehicle information
         entries = (
-            ("Customer Name:"   , "customer_name"   , "entry"   ,0,0 , None),
-            ("Customer Address:", "customer_address", "entry"   ,1,0 , None),
-            ("Contact Phone:"   , "contact_phone"   , "entry"   ,2,0 , None),
-            ("Car:"             , "car"             , "entry"   ,0,1 , None),
-            ("Door No:"         , "door_no"         , "entry"   ,1,1 , None),
-            ("Contact Email:"   , "contact_email"   , "entry"   ,2,1 , None),
+            ("customer_name"   , "entry"   ,0,0 , None),
+            ("customer_address", "entry"   ,1,0 , None),
+            ("contact_phone"   , "entry"   ,2,0 , None),
+            ("car"             , "entry"   ,0,1 , None),
+            ("plate_no"        , "entry"   ,1,1 , None),
+            ("contact_email"   , "entry"   ,2,1 , None),
         )
         self.customer_info = EntriesFrame(self,"Customer and Vehicle Info (معلومات العميل و المركبة)",entries)
         # Tire information
         entries = (
-            ("Tire:"                , "tire"            , "entry"   ,0,0 , None),
-            ("Tire category:"       , "tire_category"   , "entry"   ,1,0 , None),
-            ("Load Index [70-170]:" , "load_index"      , "spinbox" ,2,0 , (70,170)),
-            ("Origin:"              , "origin"          , "entry"   ,3,0 , None),
-            ("Tire Position:"       , "tire_position"   , "menu"    ,1,1 , ("FL","FR","BL","BR")),
-            ("Speed Rating:"        , "speed_rating"    , "entry"   ,2,1 , None),
-            ("DOT:"                 , "dot"             , "entry"   ,3,1 , None),
+            ("tire"            , "entry"   ,0,0 , None),
+            ("tire_category"   , "entry"   ,1,0 , None),
+            ("load_index"      , "spinbox" ,2,0 , (70,170)),
+            ("origin"          , "entry"   ,3,0 , None),
+            ("tire_position"   , "menu"    ,1,1 , ("FL","FR","BL","BR")),
+            ("speed_rating"    , "entry"   ,2,1 , None),
+            ("dot"             , "entry"   ,3,1 , None),
         )
         self.tire_info = EntriesFrame(self,"Tire Info (معلومات الإطار)",entries)
         # Damage information
         entries = (
-            ("Section:"         , "section"         , "entry"   ,0,0 , None),
-            ("Type:"            , "type"            , "entry"   ,1,0 , None),
-            ("Detailed Damage:" , "detailed_damage" , "entry"   ,2,0 , None),
-            ("PSI:"             , "psi"             , "entry"   ,0,1 , None),
-            ("BAR:"             , "bar"             , "entry"   ,1,1 , None),
-            ("KPA:"             , "kpa"             , "entry"   ,2,1 , None),
+            ("section"         , "entry"   ,0,0 , None),
+            ("type"            , "entry"   ,1,0 , None),
+            ("detailed_damage" , "entry"   ,2,0 , None),
         )
         self.damage_info = EntriesFrame(self,"Damage Info (معلومات الضرر)",entries)
         # add product images
@@ -72,7 +68,7 @@ class App(ttk.Window):
         frame = ttk.Frame(frame); frame.pack(side="left",fill="y")
         ttk.Button(frame,text="+" ,bootstyle="outline" , command=self.add_img).pack(fill="both",expand=True)
         ttk.Button(frame,text="-" ,bootstyle="outline" , command=self.img_table.delete_selection).pack(fill="both",expand=True)
-        ttk.Button(self,text="PDF اصدار" ,bootstyle="outline" ,command=self.create_pdf_document).pack()
+        ttk.Button(self,text="Word اصدار ملف" ,bootstyle="outline" ,command=self.create_document).pack()
     ###############        ###############        ###############        ###############        
     def add_img(self,):
         files = filedialog.askopenfilenames(filetypes=[('image files', ('.png', '.jpg' , '.jpeg' ))])
@@ -84,13 +80,13 @@ class App(ttk.Window):
                 rows.append(row)
         self.img_table.add_rows(rows)
     ###############        ###############        ###############        ###############    
-    def create_pdf_document(self):
-        output_file = filedialog.asksaveasfile(filetypes=[('PDF','.pdf')])
-        output_file = output_file.name
-        if output_file == "":
+    def create_document(self):
+        output_file = filedialog.asksaveasfile(filetypes=[('Word File','.docx')])
+        if not output_file:
             return
-        if not output_file.lower().endswith('.pdf'):
-            output_file += ".pdf"
+        output_file = output_file.name
+        if not output_file.lower().endswith('.docx'):
+            output_file += ".docx"
         data = {}
         with open("data.csv", "r",errors="ignore") as file:
             for row in csv.DictReader(file):
@@ -99,12 +95,12 @@ class App(ttk.Window):
         row_no = row_no.zfill(4)
         additional_info = {"id":row_no,"year":datetime.now().year,"month":datetime.now().month,"day":datetime.now().day}
         data.update(additional_info)
-        #get all entries
+        # get all entries
         data.update(self.basic_info.get_data())
         data.update(self.customer_info.get_data())
         data.update(self.tire_info.get_data())
         data.update(self.damage_info.get_data())
-        doc = docx.Document("claims_report_py11.docx")
+        doc = docx.Document("claims_report_py.docx")
         python_docx_replace.docx_replace(doc,**data)
         # get images
         img_files = tuple(self.img_table.data.values())
@@ -113,14 +109,10 @@ class App(ttk.Window):
         p = doc.add_paragraph()
         r = p.add_run()
         r.add_picture('stamp.png')
-        # create a new document
-        temp_file = "temp.docx"
-        doc.save(temp_file)
-        # convert to pdf
-        docx2pdf.convert(temp_file,output_file)
-        # Remove word document
-        os.remove(temp_file)
-        # 
+        # create a document
+        doc.save(output_file)
+        try: os.remove(output_file.replace(".docx",""))
+        except: pass
         for key in additional_info.keys():
             if key != "id":
                 data.pop(key)
@@ -141,7 +133,8 @@ class EntriesFrame(ttk.Labelframe):
             self.add_entry(entry)
     ###############        ###############        ###############        ###############
     def add_entry(self,entry_info):
-        label, entry_name , entry_type , row , col , options=entry_info
+        entry_name , entry_type , row , col , options=entry_info
+        label = entry_name.replace('_',' ').title() + " :"
         self.entries_frame.grid_columnconfigure(col,weight=1)
         frame = ttk.Frame(self.entries_frame)
         frame.grid(sticky="we",row=row,column=col,padx=10)
